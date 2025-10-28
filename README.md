@@ -1,4 +1,4 @@
- #🚧 This branch is designed to run on Google Colab
+# 🚧 This branch is designed to run on Google Colab
 There are slight modifications to dependencies and code to make this run in a Google Colab T4 instance, last tested on October 2025.
 
 # CodonFM: Foundation Models for Codon Sequences
