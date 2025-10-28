@@ -1,0 +1,16 @@
+name: Auto-close PRs
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Close PR with notice
+        uses: peter-evans/close-pull-request@v3
+        with:
+          comment: |
+            Thanks for your interest. This repository is read-only and does not accept Pull Requests. Please open an Issue for reproducible bugs.
+          delete-branch: false

@@ -1,0 +1,35 @@
+# Works on T4 colab instance as of October 2025
+
+torch
+torchvision
+lightning==2.5.2
+torchmetrics
+
+# --------- hydra --------- #
+hydra-core==1.3.2
+hydra-colorlog==1.2.0
+hydra-optuna-sweeper==1.2.0
+
+# --------- loggers --------- #
+wandb
+
+# --------- others --------- #
+rootutils==1.0.7  # standardizing the project root setup
+pre-commit==4.0.1      # hooks for applying linters on commit
+rich           # beautiful text formatting in terminal
+pytest
+sh==2.2.2  # for running bash commands in some tests (linux/macos only)
+transformers
+polars
+xformers
+ninja==1.11.1.1
+einops
+ipython-autotime==0.3.2
+seaborn
+lru-dict==1.3.0
+datasets
+scanpy==1.11.3
+pyfaidx==0.8.1.4
+biopython==1.85
+fiddle==0.3.0
+peft

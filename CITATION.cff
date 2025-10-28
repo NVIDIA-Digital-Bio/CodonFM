@@ -1,0 +1,55 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Learning the language of codon translation with CodonFM"
+authors:
+  - family-names: Darabi+
+    given-names: Sajad
+  - family-names: Cao+
+    given-names: Fan
+  - family-names: Naghipourfar+
+    given-names: Mohsen
+  - family-names: Rabi
+    given-names: Sara
+  - family-names: Sethia
+    given-names: Ankit
+  - family-names: Gion
+    given-names: Kyle
+  - family-names: Grewal
+    given-names: Jasleen
+  - family-names: Cohen
+    given-names: Jonathan
+  - family-names: Greenleaf
+    given-names: William
+  - family-names: Goodarzi*
+    given-names: Hani
+  - family-names: Sundaram*
+    given-names: Laksshman
+preferred-citation:
+  type: article
+  title: "Learning the language of codon translation with CodonFM"
+  year: 2025
+  url: https://research.nvidia.com/labs/dbr/assets/data/manuscripts/nv-codonfm-preprint.pdf
+  authors:
+    - family-names: Darabi+
+      given-names: Sajad
+    - family-names: Cao+
+      given-names: Fan
+    - family-names: Naghipourfar+
+      given-names: Mohsen
+    - family-names: Rabi
+      given-names: Sara
+    - family-names: Sethia
+      given-names: Ankit
+    - family-names: Gion
+      given-names: Kyle
+    - family-names: Grewal
+      given-names: Jasleen
+    - family-names: Cohen
+      given-names: Jonathan
+    - family-names: Greenleaf
+      given-names: William
+    - family-names: Goodarzi*
+      given-names: Hani
+    - family-names: Sundaram*
+      given-names: Laksshman
+
