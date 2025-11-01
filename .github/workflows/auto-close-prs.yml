@@ -8,9 +8,11 @@ jobs:
     permissions:
       pull-requests: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Close PR with notice
-        uses: peter-evans/close-pull-request@v3
-        with:
-          comment: |
-            Thanks for your interest. This repository is read-only and does not accept Pull Requests. Please open an Issue for reproducible bugs.
-          delete-branch: false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr close ${{ github.event.pull_request.number }} --comment "Thanks for your interest. This repository is read-only and does not accept Pull Requests. Please open an Issue for reproducible bugs."

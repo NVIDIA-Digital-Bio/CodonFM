@@ -227,7 +227,7 @@ class EncodonPL(LightningModule):
                 r=self.hparams.lora_r,
                 lora_alpha=self.hparams.lora_alpha,
                 lora_dropout=self.hparams.lora_dropout,
-                target_modules=["query", "value", "intermediate_dense", "post_dense"],
+                target_modules=["query", "value", "intermediate_dense"],
                 inference_mode=False,
             )
             self.model = get_peft_model(self.model, peft_config)
