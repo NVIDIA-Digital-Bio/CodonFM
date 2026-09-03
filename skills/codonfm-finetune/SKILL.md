@@ -1,6 +1,8 @@
 ---
 name: codonfm-finetune
 description: Fine-tune public CodonFM Encodon checkpoints on labeled coding-sequence or coding-variant data using LoRA, head-only, or full fine-tuning. Use when a user explicitly asks to fine-tune CodonFM or Encodon for regression or classification. Support generic public-v1 Encodon workflows only; reject Decodon, MissenseDataset, missense_synom_agg, and generation workflows.
+metadata:
+  author: "NVIDIA BioNeMo <bionemofeedback@nvidia.com>"
 ---
 
 # Fine-tune public Encodon

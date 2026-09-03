@@ -1,6 +1,8 @@
 ---
 name: codonfm-embed
 description: Extract frozen CLS embeddings from public CodonFM Encodon checkpoints for coding-sequence property modeling. Use when a user explicitly asks for CodonFM or Encodon embeddings, or wants Encodon features for translation-efficiency, expression, or mRNA-stability modeling. Support Encodon embedding_prediction only; do not claim Decodon embedding support in public CodonFM v1.
+metadata:
+  author: "NVIDIA BioNeMo <bionemofeedback@nvidia.com>"
 ---
 
 # Extract public Encodon embeddings

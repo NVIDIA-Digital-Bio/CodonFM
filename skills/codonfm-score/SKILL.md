@@ -1,6 +1,8 @@
 ---
 name: codonfm-score
 description: Score synonymous or missense coding variants with public CodonFM Encodon checkpoints using masked-codon reference-versus-alternate log-likelihood ratios. Use when a user explicitly asks for CodonFM or Encodon zero-shot variant scoring. Support the public mutation_prediction workflow only; reject Decodon and the newer synonymous-codon-aggregated missense_prediction workflow because they are not present in public CodonFM v1.
+metadata:
+  author: "NVIDIA BioNeMo <bionemofeedback@nvidia.com>"
 ---
 
 # Score variants with public Encodon

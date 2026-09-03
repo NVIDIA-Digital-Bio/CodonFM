@@ -1,6 +1,8 @@
 ---
 name: codonfm-setup
 description: Set up the public CodonFM v1 repository and download public Encodon checkpoints. Use for requests to build or launch the CodonFM development container, configure local data/checkpoint mounts, verify GPU access, or download public Encodon 80M, 600M, 1B, or Cdwt-1B weights. Do not use for Decodon, Encodon 5B/10B, missense-aggregation, or codon-optimization setup because those implementations are not in the public repository.
+metadata:
+  author: "NVIDIA BioNeMo <bionemofeedback@nvidia.com>"
 ---
 
 # CodonFM public setup
