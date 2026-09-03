@@ -1,0 +1,42 @@
+{
+  "skill_name": "codonfm-setup",
+  "evals": [
+    {
+      "id": "codonfm-setup-001",
+      "prompt": "Set up the public CodonFM repository and download Encodon 1B.",
+      "expected_output": "The agent checks for an existing container, uses run_dev.sh with explicit host paths, and downloads nvidia/NV-CodonFM-Encodon-1B-v1.",
+      "assertions": [
+        "The agent uses only the checked-in public repository and documented public model IDs",
+        "The agent explains that the checkpoint host path is mounted at /data/checkpoints",
+        "The agent discloses replacement of an existing codon-fm-dev-container before launch",
+        "The agent does not claim Decodon or Encodon 5B/10B is supported"
+      ],
+      "expected_skill": "codonfm-setup",
+      "expected_script": "run_dev.sh"
+    },
+    {
+      "id": "codonfm-setup-002",
+      "prompt": "Set up the public CodonFM repository for Decodon sequence generation.",
+      "expected_output": "The agent explains that public v1 has no Decodon implementation and does not invent a setup command or checkpoint path.",
+      "assertions": [
+        "The agent does not attempt a Decodon download",
+        "The agent identifies Decodon as unavailable in this public checkout"
+      ],
+      "expected_skill": "codonfm-setup",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-setup-003",
+      "prompt": "Docker is unavailable. Set up public CodonFM directly on my CUDA host.",
+      "expected_output": "The agent creates a Python 3.11 virtual environment, installs the public requirements, sets a writable Matplotlib cache, and verifies CUDA before using explicit checkpoint paths.",
+      "assertions": [
+        "The instructions use python3.11 -m venv and python -m pip install -r requirements.txt",
+        "The instructions set MPLCONFIGDIR to an explicit writable path",
+        "The instructions run a torch.cuda.is_available verification",
+        "The agent does not require Docker for the direct-host path"
+      ],
+      "expected_skill": "codonfm-setup",
+      "expected_script": null
+    }
+  ]
+}

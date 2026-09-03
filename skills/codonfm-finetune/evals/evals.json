@@ -1,0 +1,40 @@
+{
+  "skill_name": "codonfm-finetune",
+  "evals": [
+    {
+      "id": "codonfm-finetune-001",
+      "prompt": "Fine-tune public Encodon 80M with LoRA for my continuous sequence label.",
+      "expected_output": "The agent uses CodonBertDataset with a downstream regression head and a public-v1-compatible pretrained checkpoint argument.",
+      "assertions": [
+        "The command uses --pretrained_ckpt_path rather than --checkpoint_path",
+        "The command includes --finetune_strategy lora, --use_downstream_head, an explicit --lr, --check_val_every_n_epoch 1, and --dryrun",
+        "The command includes explicit --out_dir, --checkpoints_dir, --num_nodes 1, and --num_gpus 1",
+        "The agent requires id/ref_seq/value/split with train, val, and test values"
+      ],
+      "expected_skill": "codonfm-finetune",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-finetune-002",
+      "prompt": "Fine-tune public Encodon on labeled coding variants using a standard classification head.",
+      "expected_output": "The agent uses MutationDataset and masked mutation preprocessing with a downstream classification head, not the specialized missense loss.",
+      "assertions": [
+        "The configuration includes MutationDataset, mutation_pred_mlm, --label_col, --mask_mutation, and --extract-seq",
+        "The configuration uses classification, --num_classes, and --use_downstream_head",
+        "The agent does not use MissenseDataset or missense_synom_agg"
+      ],
+      "expected_skill": "codonfm-finetune",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-finetune-003",
+      "prompt": "Use public CodonFM to fine-tune Decodon with missense_synom_agg.",
+      "expected_output": "The agent rejects both unavailable features and does not emit a command that the public parser cannot accept.",
+      "assertions": [
+        "The agent identifies Decodon and missense_synom_agg as unavailable in public v1"
+      ],
+      "expected_skill": "codonfm-finetune",
+      "expected_script": null
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "skill_name": "codonfm-embed",
+  "evals": [
+    {
+      "id": "codonfm-embed-001",
+      "prompt": "Extract public Encodon embeddings from sequences.csv on one GPU.",
+      "expected_output": "The agent requires id/ref_seq/value/split, sets extraction rows to split=test, and uses embedding_prediction with a dry run first.",
+      "assertions": [
+        "The command includes --task_type embedding_prediction",
+        "The command includes --process_item codon_sequence and --dataset_name CodonBertDataset",
+        "The command includes --num_gpus 1 and --dryrun",
+        "The agent requires value and split=test for public-v1 evaluation",
+        "The agent reports embeddings_merged.npy and ids_merged.npy"
+      ],
+      "expected_skill": "codonfm-embed",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-embed-002",
+      "prompt": "Extract Decodon embeddings with the public CodonFM checkout.",
+      "expected_output": "The agent explains that public v1 contains no Decodon model or inference implementation.",
+      "assertions": [
+        "The agent does not emit a decodon model command"
+      ],
+      "expected_skill": "codonfm-embed",
+      "expected_script": null
+    }
+  ]
+}

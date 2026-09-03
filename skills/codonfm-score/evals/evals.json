@@ -1,0 +1,40 @@
+{
+  "skill_name": "codonfm-score",
+  "evals": [
+    {
+      "id": "codonfm-score-001",
+      "prompt": "Use public CodonFM Encodon to score my variants.csv on one GPU.",
+      "expected_output": "The agent uses mutation_prediction with MutationDataset, masks the mutation, extracts CDS context, and reports all four merged NumPy outputs.",
+      "assertions": [
+        "The command includes --task_type mutation_prediction",
+        "The command includes --process_item mutation_pred_mlm and --dataset_name MutationDataset",
+        "The command includes --mask_mutation, --extract-seq, and --num_gpus 1",
+        "The agent runs --dryrun before the real evaluation",
+        "The agent lists ref_likelihoods_merged.npy, alt_likelihoods_merged.npy, likelihood_ratios_merged.npy, and ids_merged.npy"
+      ],
+      "expected_skill": "codonfm-score",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-score-002",
+      "prompt": "Run CodonFM synonymous-codon-aggregated missense_prediction on the public repository.",
+      "expected_output": "The agent explains that public v1 supports only the general ref/alt LLR and does not silently replace the requested aggregation method.",
+      "assertions": [
+        "The agent does not run missense_prediction or missense_inference",
+        "The agent distinguishes general mutation_prediction from synonymous-codon aggregation"
+      ],
+      "expected_skill": "codonfm-score",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-score-003",
+      "prompt": "Score this variant.",
+      "expected_output": "The agent does not assume CodonFM because no model or tool was named.",
+      "assertions": [
+        "The agent does not invoke a codonfm-* skill without CodonFM or Encodon context"
+      ],
+      "expected_skill": null,
+      "expected_script": null
+    }
+  ]
+}
