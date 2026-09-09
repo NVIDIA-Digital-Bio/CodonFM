@@ -10,6 +10,30 @@ metadata:
 Run general masked-codon `mutation_prediction` only. This produces a research
 signal, not a clinical diagnosis or an expression-direction prediction.
 
+## Instructions
+
+Check whether the request is executable in public v1 before installing or
+downloading anything. For synonymous-codon aggregation or Decodon, inspect the
+[parser](../../src/runner.py) and [model configuration](../../src/config.py),
+explain the missing feature, and finish. Do not implement the missing workflow,
+search private code, or keep retrying unsupported commands.
+
+Resolve the variant CSV, checkpoint, and output directory from the request and
+available files. Validate inputs before inference. Execution requires the
+project's ML dependencies and a compatible NVIDIA GPU. If a required resource
+is unavailable, return the validated inputs where possible and a command with
+the missing prerequisite identified. When scoring is requested and resources
+are ready, execute and verify the score arrays. A request for preparation ends
+with the inputs and command. If variants are missing, report the required
+schema; do not invent variants or silently switch to a public dataset.
+
+Default to the public 80M checkpoint for demonstrations:
+`nvidia/NV-CodonFM-Encodon-80M-v1`, revision
+`399ca9fe17b57941a7bebc6788033919b417413c`, file
+`NV-CodonFM-Encodon-80M-v1.safetensors` and sibling `config.json`.
+Reuse an existing checkpoint or download it when needed for the requested work.
+Preserve an explicitly requested model size.
+
 ## Preflight
 
 1. Confirm `src/runner.py`, `src/data/mutation_dataset.py`, and
@@ -17,8 +41,8 @@ signal, not a clinical diagnosis or an expression-direction prediction.
 2. Accept only `encodon_80m`, `encodon_600m`, or `encodon_1b` as
    `--model_name`. The public parser lists larger names, but its model
    configuration does not implement them.
-3. Require a `.ckpt` file, or a `.safetensors` file with sibling
-   `config.json`.
+3. For model execution, require a `.ckpt` file, or a `.safetensors` file with
+   sibling `config.json`. Input preparation can use a planned path.
 4. Validate the CSV headers before starting a GPU job.
 
 ## Inputs
@@ -44,16 +68,17 @@ ref_seq[3 * codon_position : 3 * codon_position + 3] == ref_codon
 
 The public extractor asserts the second condition and otherwise stops the job.
 
-## Run
+## Examples
 
-First validate configuration with `--dryrun`:
+Set `CODONFM_DATA_PATH` to the variant CSV, `CODONFM_CHECKPOINT_PATH` to the
+checkpoint, and `CODONFM_RUN_DIR` to your chosen output directory:
 
 ```bash
 python -m src.runner eval \
     --exp_name variant_scoring \
-    --model_name encodon_1b \
-    --checkpoint_path /path/to/encodon_1b.safetensors \
-    --data_path /path/to/variants.csv \
+    --model_name encodon_80m \
+    --checkpoint_path "$CODONFM_CHECKPOINT_PATH" \
+    --data_path "$CODONFM_DATA_PATH" \
     --process_item mutation_pred_mlm \
     --dataset_name MutationDataset \
     --task_type mutation_prediction \
@@ -61,14 +86,24 @@ python -m src.runner eval \
     --mask_mutation \
     --num_nodes 1 \
     --num_gpus 1 \
-    --out_dir /path/to/run \
-    --predictions_output_dir /path/to/run/predictions \
-    --dryrun
+    --num_workers 0 \
+    --val_batch_size 2 \
+    --out_dir "$CODONFM_RUN_DIR" \
+    --predictions_output_dir "$CODONFM_RUN_DIR/predictions"
 ```
 
 Do not remove `--mask_mutation`: without it, the reference codon remains
-visible at the scored position and invalidates masked-codon LLR scoring. After
-the dry run succeeds, rerun the same command without `--dryrun`.
+visible at the scored position and invalidates masked-codon LLR scoring.
+For preparation requests, inspect the CSV directly against the input schema
+and reference-position checks above, then report the rows checked and provide
+the scoring command. Extra columns are allowed; use `--ref_seq_col` if the
+reference sequence has a different column name. These checks do not require
+the ML runtime. The command above performs inference when resources are ready.
+
+The existing `--dryrun` optionally builds runtime configuration and skips
+execution. It requires the ML dependencies, can create the prediction directory,
+and does not read the CSV or load weights. Do not use it as evidence that inputs,
+checkpoint compatibility, or prediction quality have been validated.
 
 ## Outputs
 

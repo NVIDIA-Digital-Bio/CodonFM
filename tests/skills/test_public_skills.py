@@ -9,11 +9,16 @@ usage can be checked before installing the GPU runtime.
 
 import argparse
 import ast
+import csv
+import hashlib
 import json
 import re
 import shlex
+import subprocess
+import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 
@@ -33,6 +38,8 @@ def _frontmatter(skill_text: str) -> dict[str, str]:
         raise AssertionError("SKILL.md is missing YAML frontmatter")
     result = {}
     for line in match.group(1).splitlines():
+        if line.startswith(" "):
+            continue
         key, separator, value = line.partition(":")
         if not separator:
             raise AssertionError(f"Invalid frontmatter line: {line}")
@@ -95,7 +102,7 @@ class PublicSkillContractTests(unittest.TestCase):
                 skill_dir = SKILLS_ROOT / skill_name
                 text = (skill_dir / "SKILL.md").read_text()
                 metadata = _frontmatter(text)
-                self.assertEqual(set(metadata), {"name", "description"})
+                self.assertEqual(set(metadata), {"name", "description", "metadata"})
                 self.assertEqual(metadata["name"], skill_name)
                 self.assertNotIn("TODO", text)
 
@@ -113,6 +120,55 @@ class PublicSkillContractTests(unittest.TestCase):
                 self.assertGreater(len(payload["evals"]), 0)
                 ids = [case["id"] for case in payload["evals"]]
                 self.assertEqual(len(ids), len(set(ids)))
+
+    def test_eval_inputs_exist_and_source_fixtures_match_repository(self):
+        expected_archive = None
+        for skill_name in sorted(PUBLIC_SKILLS):
+            evals = SKILLS_ROOT / skill_name / "evals"
+            payload = json.loads((evals / "evals.json").read_text())
+            for case in payload["evals"]:
+                for relative in case.get("files", []):
+                    path = (evals / relative).resolve()
+                    self.assertTrue(path.is_relative_to(evals.resolve()))
+                    self.assertTrue(path.is_file(), str(path))
+            archive_path = evals / "files/codonfm_source.zip"
+            data = archive_path.read_bytes()
+            if expected_archive is not None:
+                self.assertEqual(data, expected_archive, "Trials must receive identical public source")
+            expected_archive = data
+            with zipfile.ZipFile(archive_path) as archive:
+                manifest = json.loads(archive.read("source-manifest.json"))
+                for name, sha in manifest["sha256"].items():
+                    self.assertEqual(archive.read(name), (REPO_ROOT / name).read_bytes(),
+                                     "Refresh source fixtures with python skills/stage_eval_context.py")
+                    self.assertEqual(hashlib.sha256(archive.read(name)).hexdigest(), sha)
+                self.assertFalse(any(name.startswith("skills/") or name.endswith(".safetensors")
+                                     for name in archive.namelist()))
+
+    def test_ribonn_preparation_preserves_data_without_runtime_dependencies(self):
+        files = SKILLS_ROOT / "codonfm-finetune/evals/files"
+        helper = SKILLS_ROOT / "codonfm-finetune/scripts/prepare_ribonn.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "prepared.csv"
+            result = subprocess.run([sys.executable, "-S", str(helper), "--input",
+                                     str(files / "ribonn_smoke.tsv"), "--output", str(output)],
+                                    cwd=REPO_ROOT, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["split_counts"], {"train": 8, "val": 2, "test": 2})
+            self.assertEqual(json.loads(output.with_suffix(".metadata.json").read_text()), report)
+            with (files / "ribonn_smoke.tsv").open() as handle:
+                raw = {row["transcript_id"]: row for row in csv.DictReader(handle, delimiter="\t")}
+            with output.open() as handle:
+                rows = list(csv.DictReader(handle))
+            self.assertEqual(len(rows), 12)
+            for row in rows:
+                source = raw[row["id"]]
+                start, length = int(source["utr5_size"]), int(source["cds_size"])
+                self.assertEqual(row["ref_seq"], source["tx_sequence"][start:start + length])
+                self.assertEqual(float(row["value"]), float(source["mean_te"]))
+                fold = int(source["fold"])
+                self.assertEqual(row["split"], "val" if fold == 8 else "test" if fold == 9 else "train")
 
     def test_documented_runner_commands_parse(self):
         parser = _public_runner_parser()
@@ -136,13 +192,11 @@ class PublicSkillContractTests(unittest.TestCase):
         )[0]
         self.assertIn("--mask_mutation", score)
         self.assertIn("--extract-seq", score)
-        self.assertIn("--dryrun", score)
         self.assertEqual(score[score.index("--num_gpus") + 1], "1")
 
         embed = _runner_commands(
             (SKILLS_ROOT / "codonfm-embed/SKILL.md").read_text()
         )[0]
-        self.assertIn("--dryrun", embed)
         self.assertEqual(embed[embed.index("--num_gpus") + 1], "1")
 
         finetune = _runner_commands(
@@ -155,7 +209,6 @@ class PublicSkillContractTests(unittest.TestCase):
             "--check_val_every_n_epoch",
             "--checkpoints_dir",
             "--use_downstream_head",
-            "--dryrun",
         ):
             self.assertIn(flag, finetune)
         self.assertEqual(

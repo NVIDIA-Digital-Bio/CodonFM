@@ -10,10 +10,32 @@ metadata:
 Operate from the public CodonFM repository root. Support only the checked-in
 public v1 code and public Encodon checkpoints.
 
+## Instructions
+
+Determine whether the user wants instructions, a downloaded checkpoint, or a
+working model environment. Inspect the [runner](../../src/runner.py),
+[model configuration](../../src/config.py), [Dockerfile](../../Dockerfile),
+[launcher](../../run_dev.sh), and [requirements](../../requirements.txt).
+Reuse available environments and checkpoints, and choose paths from the user's
+project. Follow the requested scope: instructions do not require installation;
+checkpoint downloads do not require a GPU; actual model execution requires the
+ML dependencies and a compatible NVIDIA GPU.
+
+Check hardware before installing the runtime: use `nvidia-smi` if available, or
+check CUDA through an existing PyTorch installation. If a prerequisite cannot
+be met, complete independent setup steps and report what is still missing.
+Check supplied files and configuration directly when preparing setup instructions.
+The existing runner's optional `--dryrun` builds runtime configuration with
+the ML dependencies installed, then stops before execution. It does not validate
+CSV data or load weights, and setup instructions do not require running it.
+Public Decodon is unavailable: inspect local source and explain the boundary
+without attempting an unsupported installation.
+
 ## Preflight
 
 1. Confirm `Dockerfile`, `run_dev.sh`, and `src/runner.py` exist.
-2. Confirm `docker info` succeeds and `nvidia-smi` sees the intended GPU.
+2. For container execution, confirm `docker info` succeeds and `nvidia-smi`
+   sees the intended GPU. Direct-host setup does not require Docker.
 3. Run `bash -n run_dev.sh` before launching it.
 4. Resolve explicit host paths for data and checkpoints. Do not rely on the
    `/data/codonfm` defaults unless the user confirms they exist.
@@ -33,15 +55,18 @@ before execution.
 ## Build and launch
 
 ```bash
-cd /path/to/CodonFM
+cd "$CODONFM_REPO_DIR"
 bash run_dev.sh \
-    --data-dir /absolute/path/to/data \
-    --checkpoints-dir /absolute/path/to/checkpoints
+    --data-dir "$CODONFM_DATA_DIR" \
+    --checkpoints-dir "$CODONFM_CHECKPOINT_DIR"
 ```
 
 The host checkpoint directory is mounted at `/data/checkpoints` inside the
 container. The image is `codon-fm-dev`; the container is
 `codon-fm-dev-container`.
+
+Set `CODONFM_REPO_DIR`, `CODONFM_DATA_DIR`, and `CODONFM_CHECKPOINT_DIR` to
+existing absolute paths chosen for the project.
 
 Use only the checked-in public code and the dependency versions declared in
 its `Dockerfile` and `requirements.txt`.
@@ -49,24 +74,43 @@ its `Dockerfile` and `requirements.txt`.
 ## Run directly without Docker
 
 Use this path when Docker is unavailable and the host has a compatible NVIDIA
-driver. The tested baseline is Python 3.11, CUDA-capable PyTorch, and one GPU.
+driver. The example below uses Python 3.11, CUDA-capable PyTorch, and one GPU.
 Operate from a writable checkout and use a dedicated virtual environment:
 
 ```bash
-cd /path/to/CodonFM
+cd "$CODONFM_REPO_DIR"
 python3.11 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-mkdir -p /absolute/path/to/codonfm-matplotlib-cache
-export MPLCONFIGDIR=/absolute/path/to/codonfm-matplotlib-cache
+mkdir -p "$CODONFM_CACHE_DIR/matplotlib"
+export MPLCONFIGDIR="$CODONFM_CACHE_DIR/matplotlib"
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 ```
 
-Expect `True` and the selected GPU name. The requirements file configures the
+Set `CODONFM_CACHE_DIR` to a writable cache directory. Expect `True` and the
+selected GPU name. The requirements file configures the
 CUDA 12.4 PyTorch index for xFormers. Use explicit host paths in all subsequent
 runner commands; unlike the container path, no `/data/checkpoints` mount is
 created.
+
+## Examples
+
+For a small demonstration, prefer the original public Encodon 80M weights:
+
+```bash
+hf download nvidia/NV-CodonFM-Encodon-80M-v1 \
+    NV-CodonFM-Encodon-80M-v1.safetensors config.json \
+    --revision 399ca9fe17b57941a7bebc6788033919b417413c \
+    --local-dir "$CODONFM_CHECKPOINT_DIR/encodon-80m"
+```
+
+The [checkpoint](https://huggingface.co/nvidia/NV-CodonFM-Encodon-80M-v1/tree/main)
+is publicly accessible without a gated-model approval, and the weight file is
+307,351,588 bytes. It need not be mirrored to GitHub LFS. The `-TE-` model IDs
+use TransformerEngine in `bionemo-recipes`; use the original model IDs with this
+public CodonFM codebase. Download only the weights and `config.json`, and reuse
+an existing local checkpoint.
 
 ## Download a checkpoint
 
