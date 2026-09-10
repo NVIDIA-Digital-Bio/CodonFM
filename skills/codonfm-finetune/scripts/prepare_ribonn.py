@@ -5,21 +5,23 @@
 
 import argparse
 import csv
+import http.client
 import io
 import json
 import math
 import time
-import urllib.error
-import urllib.request
 from collections import Counter
+from contextlib import closing
 from pathlib import Path
 
 
 DATA_REVISION = "512fca642b6b7b61ae494ad83cfc2b72831636d2"
-DATA_URL = (
-    f"https://raw.githubusercontent.com/CenikLab/TE_classic_ML/{DATA_REVISION}"
+DATA_HOST = "raw.githubusercontent.com"
+DATA_PATH = (
+    f"/CenikLab/TE_classic_ML/{DATA_REVISION}"
     "/data/data_with_human_TE_cellline_all_NA_plain.csv"
 )
+DATA_URL = f"https://{DATA_HOST}{DATA_PATH}"
 
 
 def prepare(handle, max_rows_per_split=8, max_codons=2046, deadline=None):
@@ -98,11 +100,15 @@ def main():
             with args.input.open(encoding="utf-8-sig", newline="") as handle:
                 rows, report = prepare(handle, args.max_rows_per_split, args.max_codons)
         else:
-            # No retry loop or full-dataset download for the default example.
+            # Fixed HTTPS endpoint with default certificate verification; no redirects or retries.
             deadline = time.monotonic() + 60
-            with urllib.request.urlopen(DATA_URL, timeout=10) as response:
-                with io.TextIOWrapper(response, encoding="utf-8-sig", newline="") as handle:
-                    rows, report = prepare(handle, args.max_rows_per_split, args.max_codons, deadline)
+            with closing(http.client.HTTPSConnection(DATA_HOST, timeout=10)) as connection:
+                connection.request("GET", DATA_PATH)
+                with connection.getresponse() as response:
+                    if response.status != 200:
+                        raise ValueError(f"Dataset download returned HTTP {response.status}; expected 200 without redirects")
+                    with io.TextIOWrapper(response, encoding="utf-8-sig", newline="") as handle:
+                        rows, report = prepare(handle, args.max_rows_per_split, args.max_codons, deadline)
         report.update({"source": str(args.input) if args.input else DATA_URL, "upstream_url": DATA_URL})
         args.output.parent.mkdir(parents=True, exist_ok=True)
         with args.output.open("w", newline="", encoding="utf-8") as handle:
@@ -110,7 +116,7 @@ def main():
             writer.writeheader()
             writer.writerows(rows)
         args.output.with_suffix(".metadata.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    except (ValueError, OSError, urllib.error.URLError) as exc:
+    except (ValueError, OSError, http.client.HTTPException) as exc:
         parser.exit(1, f"Preparation failed: {exc}\n")
     print(json.dumps(report, indent=2))
 

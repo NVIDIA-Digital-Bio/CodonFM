@@ -11,15 +11,20 @@ import argparse
 import ast
 import csv
 import hashlib
+import importlib.util
+import io
 import json
 import re
 import shlex
+import ssl
 import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -84,6 +89,14 @@ def _evaluate_function(namespace):
     module = ast.Module(body=[evaluate], type_ignores=[])
     exec(compile(module, "src/tasks.py", "exec"), namespace)
     return namespace["evaluate"]
+
+
+def _ribonn_helper():
+    path = SKILLS_ROOT / "codonfm-finetune/scripts/prepare_ribonn.py"
+    spec = importlib.util.spec_from_file_location("prepare_ribonn", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class PublicSkillContractTests(unittest.TestCase):
@@ -169,6 +182,60 @@ class PublicSkillContractTests(unittest.TestCase):
                 self.assertEqual(float(row["value"]), float(source["mean_te"]))
                 fold = int(source["fold"])
                 self.assertEqual(row["split"], "val" if fold == 8 else "test" if fold == 9 else "train")
+
+    def test_ribonn_download_requires_direct_https_success(self):
+        helper = _ribonn_helper()
+        fixture = (SKILLS_ROOT / "codonfm-finetune/evals/files/ribonn_smoke.tsv").read_bytes()
+        for status in (200, 301, 302, 303, 307, 308, 404, 500):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as tmp:
+                output = Path(tmp) / "prepared.csv"
+                response = io.BytesIO(fixture)
+                response.status = status
+                with (
+                    patch.object(helper.http.client, "HTTPSConnection") as https,
+                    patch.object(sys, "argv", ["prepare_ribonn.py", "--output", str(output)]),
+                    redirect_stdout(io.StringIO()) as stdout,
+                    redirect_stderr(io.StringIO()) as stderr,
+                ):
+                    connection = https.return_value
+                    connection.getresponse.return_value = response
+                    if status == 200:
+                        helper.main()
+                        report = json.loads(stdout.getvalue())
+                        self.assertEqual(report["split_counts"], {"train": 8, "val": 2, "test": 2})
+                        self.assertEqual(report["source"], helper.DATA_URL)
+                        self.assertTrue(output.is_file())
+                    else:
+                        with self.assertRaises(SystemExit) as failure:
+                            helper.main()
+                        self.assertEqual(failure.exception.code, 1)
+                        self.assertIn(f"HTTP {status}", stderr.getvalue())
+                        self.assertEqual(list(Path(tmp).iterdir()), [])
+                    https.assert_called_once_with("raw.githubusercontent.com", timeout=10)
+                    connection.request.assert_called_once_with("GET", helper.DATA_PATH)
+                    connection.close.assert_called_once_with()
+                    self.assertTrue(response.closed)
+
+    def test_ribonn_download_handles_transport_errors_without_output(self):
+        helper = _ribonn_helper()
+        errors = (TimeoutError("read timed out"), ssl.SSLCertVerificationError("untrusted certificate"),
+                  helper.http.client.BadStatusLine("invalid HTTP response"))
+        for error in errors:
+            with self.subTest(error=type(error).__name__), tempfile.TemporaryDirectory() as tmp:
+                output = Path(tmp) / "prepared.csv"
+                with (
+                    patch.object(helper.http.client, "HTTPSConnection") as https,
+                    patch.object(sys, "argv", ["prepare_ribonn.py", "--output", str(output)]),
+                    redirect_stderr(io.StringIO()) as stderr,
+                ):
+                    https.return_value.getresponse.side_effect = error
+                    with self.assertRaises(SystemExit) as failure:
+                        helper.main()
+                    self.assertEqual(failure.exception.code, 1)
+                    self.assertIn("Preparation failed:", stderr.getvalue())
+                    self.assertEqual(list(Path(tmp).iterdir()), [])
+                    https.assert_called_once()
+                    https.return_value.close.assert_called_once_with()
 
     def test_documented_runner_commands_parse(self):
         parser = _public_runner_parser()
