@@ -157,10 +157,19 @@ def evaluate(
     model.configure_model()
 
     data.setup("test")
-    if os.path.exists(model_ckpt_path):
+    # Safetensors files contain model weights only.  Loading one again through
+    # torch.load() raises an unpickling error, so only inspect Lightning
+    # checkpoints for an optional datamodule state.
+    if (
+        os.path.exists(model_ckpt_path)
+        and Path(model_ckpt_path).suffix.lower() == ".ckpt"
+    ):
         logging.info(f"Loading dataset checkpoint from {model_ckpt_path}")
-        data.load_state_dict(torch.load(model_ckpt_path))
-        model.prediction_counter = data.init_global_step
+        checkpoint = torch.load(model_ckpt_path, map_location="cpu")
+        datamodule_state = checkpoint.get(data.__class__.__qualname__)
+        if datamodule_state is not None:
+            data.load_state_dict(datamodule_state)
+            model.prediction_counter = data.init_global_step
     
     trainer.logger = logger
     trainer.callbacks = list(callbacks.values())
@@ -169,4 +178,4 @@ def evaluate(
     trainer.predict(model, 
                     datamodule=data, 
                     return_predictions=False)
-    return 
+    return

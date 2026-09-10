@@ -1,0 +1,38 @@
+{
+  "skill_name": "codonfm-embed",
+  "evals": [
+    {
+      "id": "codonfm-embed-001",
+      "prompt": "Validate the supplied sequences.csv and prepare a public Encodon embedding-extraction command. Explain which rows will be processed and how to associate the output embeddings with sequence IDs. Use the supplied public source and checkpoint metadata.",
+      "files": [
+        "files/codonfm_source.zip",
+        "files/encodon_checkpoint.json",
+        "files/sequences.csv"
+      ],
+      "expected_output": "Two validated test rows and a public embedding_prediction command with the correct embedding/ID output contract.",
+      "assertions": [
+        "The command uses embedding_prediction, codon_sequence, and CodonBertDataset",
+        "The command specifies --checkpoint_path and output/prediction paths appropriate to the chosen working directory",
+        "The agent validates both sequence rows, including value and split=test, and explains that evaluation processes the test split",
+        "The response identifies embeddings_merged.npy and ids_merged.npy and explains their row alignment without fabricating embeddings"
+      ],
+      "expected_skill": "codonfm-embed",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-embed-002",
+      "prompt": "Does the public CodonFM implementation support extracting Decodon embeddings? Check the supplied source and explain the limitation, if any.",
+      "files": [
+        "files/codonfm_source.zip",
+        "files/encodon_checkpoint.json"
+      ],
+      "expected_output": "The agent identifies the absence of a public Decodon model and inference implementation.",
+      "assertions": [
+        "The agent explains that the supplied public source has no Decodon model/inference implementation and cites inspected files",
+        "The agent does not invent a Decodon command or attempt to implement the missing model"
+      ],
+      "expected_skill": "codonfm-embed",
+      "expected_script": null
+    }
+  ]
+}

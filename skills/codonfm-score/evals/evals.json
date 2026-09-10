@@ -1,0 +1,51 @@
+{
+  "skill_name": "codonfm-score",
+  "evals": [
+    {
+      "id": "codonfm-score-001",
+      "prompt": "Validate the supplied variants.csv and prepare an Encodon masked-codon scoring command. Explain the output files and how to interpret the score sign. Use the supplied public source and checkpoint metadata; the two variants are synthetic examples.",
+      "files": [
+        "files/codonfm_source.zip",
+        "files/encodon_checkpoint.json",
+        "files/variants.csv"
+      ],
+      "expected_output": "Two validated variant rows and a public mutation_prediction command, with the correct output contract and reference-versus-alternate score interpretation.",
+      "assertions": [
+        "The command uses mutation_prediction, mutation_pred_mlm, and MutationDataset",
+        "The command includes --mask_mutation, --extract-seq, --checkpoint_path, and explicit prediction/output paths",
+        "The agent validates both variant rows, including reference codon agreement at the zero-based CDS position",
+        "The response identifies ref_likelihoods_merged.npy, alt_likelihoods_merged.npy, likelihood_ratios_merged.npy, and ids_merged.npy as expected inference outputs",
+        "The agent defines LLR as log p(ref_codon) minus log p(alt_codon), does not equate it with expression direction or clinical effect, and does not fabricate scores"
+      ],
+      "expected_skill": "codonfm-score",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-score-002",
+      "prompt": "Can I run synonymous-codon-aggregated missense_prediction with public CodonFM? Check the supplied source and explain how this relates to the available variant-scoring method.",
+      "files": [
+        "files/codonfm_source.zip",
+        "files/encodon_checkpoint.json"
+      ],
+      "expected_output": "The agent explains that the aggregation workflow is unavailable and distinguishes it from ordinary masked reference/alternate codon LLR scoring.",
+      "assertions": [
+        "The agent identifies missense_prediction and missense_inference as unavailable in the supplied public implementation",
+        "The agent cites inspected source and distinguishes general mutation_prediction from synonymous-codon aggregation",
+        "The agent answers the compatibility question without implementing a missing feature or silently substituting the available method"
+      ],
+      "expected_skill": "codonfm-score",
+      "expected_script": null
+    },
+    {
+      "id": "codonfm-score-003",
+      "prompt": "Score this variant.",
+      "expected_output": "The agent requests the missing variant and analysis context without assuming CodonFM.",
+      "assertions": [
+        "The agent does not invoke a codonfm-* skill without CodonFM or Encodon context",
+        "The agent identifies missing inputs without inventing a variant or choosing a model"
+      ],
+      "expected_skill": null,
+      "expected_script": null
+    }
+  ]
+}
